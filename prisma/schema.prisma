@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  users     User[]
+  services  Service[]
+  incidents Incident[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String?
+  role           Role         @default(USER)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Service {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  status         ServiceStatus @default(OPERATIONAL)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  incidents      Incident[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Incident {
+  id             String        @id @default(cuid())
+  title          String
+  description    String
+  status         IncidentStatus @default(INVESTIGATING)
+  impact         Impact        @default(MINOR)
+  service        Service       @relation(fields: [serviceId], references: [id])
+  serviceId      String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  updates        StatusUpdate[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+  @@index([serviceId])
+}
+
+model StatusUpdate {
+  id          String    @id @default(cuid())
+  message     String
+  incident    Incident  @relation(fields: [incidentId], references: [id])
+  incidentId  String
+  createdAt   DateTime  @default(now())
+
+  @@index([incidentId])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ServiceStatus {
+  OPERATIONAL
+  DEGRADED_PERFORMANCE
+  PARTIAL_OUTAGE
+  MAJOR_OUTAGE
+  MAINTENANCE
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum Impact {
+  MINOR
+  MAJOR
+  CRITICAL
+}
