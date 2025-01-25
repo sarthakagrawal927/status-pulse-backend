@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { authenticate, isAdmin } from '../middleware/auth.middleware';
 import {
+  validateCreateService,
+  validateUpdateService,
+  validateServiceId
+} from '../middleware/validators/service.validator';
+import {
   createService,
   getServices,
   updateService,
@@ -12,11 +17,10 @@ const router = Router();
 
 router.use(authenticate);
 
-// Updated route handlers to not return the response
 router.get('/', getServices);
-router.get('/:id', getServiceById);
-router.post('/', isAdmin, createService);
-router.patch('/:id', isAdmin, updateService);
-router.delete('/:id', isAdmin, deleteService);
+router.get('/:id', validateServiceId, getServiceById);
+router.post('/', isAdmin, validateCreateService, createService);
+router.patch('/:id', isAdmin, validateUpdateService, updateService);
+router.delete('/:id', isAdmin, validateServiceId, deleteService);
 
 export default router;
