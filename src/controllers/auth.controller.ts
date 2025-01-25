@@ -1,5 +1,13 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
+import { UserRole, UserStatus } from '../utils/constants';
+
+const EXISTING_USER_ERROR_STATUS = {
+  [UserStatus.ACTIVE]: 'User already exists',
+  [UserStatus.REMOVED_BY_ADMIN]: 'User is removed, Ask for a new invitation',
+  [UserStatus.REMOVED_BY_SELF]: 'User is removed, Ask for a new invitation',
+  [UserStatus.INVITATION_PENDING]: '', // will not happen
+}
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -11,7 +19,24 @@ export const register = async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      res.status(400).json({ message: 'User already exists' });
+      if (Object.keys(EXISTING_USER_ERROR_STATUS).includes(existingUser.status)) {
+        res.status(400).json({ message: EXISTING_USER_ERROR_STATUS[existingUser.status] });
+        return;
+      }
+
+      // accept invitation
+      await prisma.user.update({
+        where: { email },
+        data: {
+          status: UserStatus.ACTIVE,
+        },
+      });
+      res.status(200).json({...existingUser, status: UserStatus.ACTIVE});
+      return;
+    }
+
+    if (!organizationName) {
+      res.status(400).json({ message: 'Organization name is required' });
       return;
     }
 
@@ -23,7 +48,7 @@ export const register = async (req: Request, res: Response) => {
           create: {
             email,
             name,
-            role: 'ADMIN',
+            role: UserRole.ADMIN,
           },
         },
       },
@@ -54,7 +79,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401).json({ message: 'User not found' });
       return;
     }
 

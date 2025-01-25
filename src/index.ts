@@ -23,7 +23,7 @@ const io = new Server(httpServer, {
   },
 });
 
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({ log: ['query', 'info', 'warn', 'error']});
 
 // Middleware
 app.use(cors());
