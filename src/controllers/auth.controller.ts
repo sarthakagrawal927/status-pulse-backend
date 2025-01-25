@@ -6,7 +6,9 @@ const EXISTING_USER_ERROR_STATUS = {
   [UserStatus.ACTIVE]: 'User already exists',
   [UserStatus.REMOVED_BY_ADMIN]: 'User is removed, Ask for a new invitation',
   [UserStatus.REMOVED_BY_SELF]: 'User is removed, Ask for a new invitation',
-  [UserStatus.INVITATION_PENDING]: '', // will not happen
+  [UserStatus.INVITATION_REJECTED]: 'User invitation rejected in past, Ask for a new invitation',
+  [UserStatus.INVITATION_REVOKED]: 'User invitation revoked, Ask for a new invitation',
+  [UserStatus.INVITATION_PENDING]: false, // will not happen
 }
 
 export const register = async (req: Request, res: Response) => {
@@ -19,7 +21,7 @@ export const register = async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      if (Object.keys(EXISTING_USER_ERROR_STATUS).includes(existingUser.status)) {
+      if (Object.keys(EXISTING_USER_ERROR_STATUS).filter(Boolean).includes(existingUser.status)) {
         res.status(400).json({ message: EXISTING_USER_ERROR_STATUS[existingUser.status] });
         return;
       }

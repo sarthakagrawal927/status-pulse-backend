@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../index';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { NEGATED_USER_STATUS, UserRole, UserStatus } from '../utils/constants';
 
 export const getTeamMembers = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -14,6 +15,7 @@ export const getTeamMembers = async (req: AuthenticatedRequest, res: Response) =
         name: true,
         role: true,
         createdAt: true,
+        status: true,
       },
     });
     res.json(users);
@@ -22,6 +24,7 @@ export const getTeamMembers = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+// ideally you would want to log all invitations and rejections in the database for audit purposes
 export const inviteTeamMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { email, name, role } = req.body;
@@ -42,6 +45,7 @@ export const inviteTeamMember = async (req: AuthenticatedRequest, res: Response)
         name,
         role,
         organizationId: req.organizationId!,
+        status: UserStatus.INVITATION_PENDING,
       },
     });
 
@@ -55,6 +59,10 @@ export const inviteTeamMember = async (req: AuthenticatedRequest, res: Response)
 
 export const removeTeamMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (req.user.role !== UserRole.ADMIN && req.user.id !== req.params.id) {
+      res.json({ message: 'Admin access required' });
+      return;
+    }
     const user = await prisma.user.findFirst({
       where: {
         id: req.params.id,
@@ -67,12 +75,31 @@ export const removeTeamMember = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    if (NEGATED_USER_STATUS.includes(user.status)) {
+      res.status(400).json({ message: 'User is not removable' });
+      return;
+    }
+
+    if (user.status === UserStatus.INVITATION_PENDING) {
+      // revoke invitation
+      await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          status: req.user.id === user.id ? UserStatus.INVITATION_REJECTED : UserStatus.INVITATION_REVOKED,
+        },
+      });
+      res.status(204).send();
+      return;
+    }
+
     // Prevent removing the last admin
-    if (user.role === 'ADMIN') {
+    if (user.role === UserRole.ADMIN) { // would ideally want to lock the org rows here, to handle concurrent updates
       const adminCount = await prisma.user.count({
         where: {
           organizationId: req.organizationId,
-          role: 'ADMIN',
+          role: UserRole.ADMIN,
         },
       });
 
@@ -82,9 +109,12 @@ export const removeTeamMember = async (req: AuthenticatedRequest, res: Response)
       }
     }
 
-    await prisma.user.delete({
+    await prisma.user.update({
       where: {
         id: req.params.id,
+      },
+      data: {
+        status: req.user.id === user.id ? UserStatus.REMOVED_BY_SELF :  UserStatus.REMOVED_BY_ADMIN,
       },
     });
 
@@ -105,22 +135,22 @@ export const updateTeamMember = async (req: AuthenticatedRequest, res: Response)
       },
     });
 
-    if (!user) {
-      res.status(404).json({ message: 'User not found' });
+    if (!user || NEGATED_USER_STATUS.includes(user.status)) {
+      res.status(404).json({ message: 'User not found or unable to update' });
       return;
     }
 
-    // Prevent removing the last admin
-    if (user.role === 'ADMIN' && role === 'USER') {
+    // Prevent demoting the last admin
+    if (user.role === UserRole.ADMIN && role === UserRole.USER) {
       const adminCount = await prisma.user.count({
         where: {
           organizationId: req.organizationId,
-          role: 'ADMIN',
+          role: UserRole.ADMIN,
         },
       });
 
       if (adminCount <= 1) {
-        res.status(400).json({ message: 'Cannot remove the last admin' });
+        res.status(400).json({ message: 'Cannot demote the last admin' });
         return;
       }
     }
