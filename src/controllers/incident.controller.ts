@@ -159,12 +159,21 @@ export const deleteIncident = async (req: AuthenticatedRequest, res: Response) =
 
 export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { message } = req.body;
+    const { message, status } = req.body;
 
     const incident = await prisma.incident.findFirst({
       where: {
         id: req.params.id,
         organizationId: req.organizationId,
+      },
+      include: {
+        service: true,
+        updates: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
       },
     });
 
@@ -173,16 +182,58 @@ export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) 
       return;
     }
 
-    const statusUpdate = await prisma.statusUpdate.create({
-      data: {
-        message,
-        incidentId: req.params.id,
-      },
+    // Create status update and update incident status in a transaction
+    const [statusUpdate, updatedIncident] = await prisma.$transaction([
+      prisma.statusUpdate.create({
+        data: {
+          message,
+          status,
+          incidentId: req.params.id,
+          createdById: req.user.id,
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.incident.update({
+        where: {
+          id: req.params.id,
+        },
+        data: {
+          status,
+          updatedAt: new Date(),
+        },
+        include: {
+          service: true,
+          updates: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 5,
+            include: {
+              createdBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    res.status(201).json({
+      statusUpdate,
+      incident: updatedIncident,
     });
-
-    // TODO: Emit socket event for real-time updates
-
-    res.status(201).json(statusUpdate);
   } catch (error) {
     res.status(500).json({ message: 'Error adding status update' });
   }

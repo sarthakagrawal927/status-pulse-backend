@@ -21,7 +21,7 @@ const updateIncidentSchema = z.object({
 });
 
 const statusUpdateSchema = z.object({
-  message: z.string().min(1),
+  message: z.string().min(1).max(1000),
   status: z.nativeEnum(IncidentStatus)
 });
 

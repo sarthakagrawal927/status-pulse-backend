@@ -24,16 +24,17 @@ model Organization {
 }
 
 model User {
-  id             String       @id @default(cuid())
-  email          String       @unique
+  id             String         @id @default(cuid())
+  email          String         @unique
   // password       String?
   name           String?
-  role           UserRole     @default(USER)
-  status         UserStatus   @default(ACTIVE)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           UserRole       @default(USER)
+  status         UserStatus     @default(ACTIVE)
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  statusUpdates  StatusUpdate[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([organizationId])
 }
@@ -71,13 +72,17 @@ model Incident {
 }
 
 model StatusUpdate {
-  id          String    @id @default(cuid())
+  id          String         @id @default(cuid())
   message     String
-  incident    Incident  @relation(fields: [incidentId], references: [id])
+  status      IncidentStatus
+  incident    Incident       @relation(fields: [incidentId], references: [id])
   incidentId  String
-  createdAt   DateTime  @default(now())
+  createdBy   User          @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime      @default(now())
 
   @@index([incidentId])
+  @@index([createdById])
 }
 
 enum UserRole {
