@@ -3,6 +3,7 @@ import { prisma } from "../index";
 import { UserRole, UserStatus } from "../utils/constants";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/jwt.config";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 const EXISTING_USER_ERROR_STATUS: Record<UserStatus, string | boolean> = {
   [UserStatus.ACTIVE]: "User already exists",
@@ -117,7 +118,6 @@ export const login = async (req: Request, res: Response) => {
 
     res.json({
       user,
-      organization: user.organization,
     });
   } catch (error) {
     res.status(500).json({ message: "Error logging in" });
@@ -129,39 +129,23 @@ export const logout = async (req: Request, res: Response) => {
   res.json({ message: "Logged out successfully" });
 };
 
-export const me = async (req: Request, res: Response) => {
+export const me = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const token = req.cookies.auth_token;
-
-    if (!token) {
-      res.status(401).json({ message: "Not authenticated" });
-      return;
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email: string;
-      role: string;
-    };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      include: { organization: true },
-    });
-
-    if (!user) {
-      res.status(401).json({ message: "User not found" });
-      return;
-    }
+    // Since we're using AuthenticatedRequest, we already have the user info from the middleware
+    const { id, email, role, organizationId } = req.user;
 
     res.json({
-      user,
-      organization: user.organization,
+      user: {
+        id,
+        email,
+        role,
+        organizationId,
+        organization: await prisma.organization.findUnique({
+          where: { id: organizationId },
+        }),
+      },
     });
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ message: "Invalid token" });
-      return;
-    }
     res.status(500).json({ message: "Error getting user info" });
   }
 };
