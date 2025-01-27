@@ -1,64 +1,81 @@
-import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import { ServiceStatus } from '../../utils/constants';
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import { ServiceStatus } from "../../utils/constants";
 
 // Validation schemas
 const serviceSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().min(1),
-  status: z.nativeEnum(ServiceStatus)
+  status: z.nativeEnum(ServiceStatus).optional(),
 });
 
-const updateServiceSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  description: z.string().min(1).optional(),
-  status: z.nativeEnum(ServiceStatus).optional()
-}).refine(data => Object.keys(data).length > 0, {
-  message: "At least one field must be provided"
-});
+const updateServiceSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().min(1).optional(),
+    status: z.nativeEnum(ServiceStatus).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 const idParamSchema = z.object({
-  id: z.string().uuid()
+  id: z.string(),
 });
 
 // Middleware functions
-export const validateCreateService = (req: Request, res: Response, next: NextFunction) => {
+export const validateCreateService = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const result = serviceSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).json({
-      message: 'Invalid input',
-      errors: result.error.errors
+      message: "Invalid input",
+      errors: result.error.errors,
     });
+    return;
   }
   next();
 };
 
-export const validateUpdateService = (req: Request, res: Response, next: NextFunction) => {
+export const validateUpdateService = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const paramsResult = idParamSchema.safeParse({ id: req.params.id });
   if (!paramsResult.success) {
     res.status(400).json({
-      message: 'Invalid service ID',
-      errors: paramsResult.error.errors
+      message: "Invalid service ID",
+      errors: paramsResult.error.errors,
     });
   }
 
   const bodyResult = updateServiceSchema.safeParse(req.body);
   if (!bodyResult.success) {
     res.status(400).json({
-      message: 'Invalid input',
-      errors: bodyResult.error.errors
+      message: "Invalid input",
+      errors: bodyResult.error.errors,
     });
+    return;
   }
   next();
 };
 
-export const validateServiceId = (req: Request, res: Response, next: NextFunction) => {
+export const validateServiceId = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const result = idParamSchema.safeParse({ id: req.params.id });
   if (!result.success) {
     res.status(400).json({
-      message: 'Invalid service ID',
-      errors: result.error.errors
+      message: "Invalid service ID",
+      errors: result.error.errors,
     });
+    return;
   }
-  next(); 
+  next();
 };

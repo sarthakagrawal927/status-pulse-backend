@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { prisma } from '../index';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { IncidentStatus } from '../utils/constants';
+import { Request, Response } from "express";
+import { prisma } from "../index";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { IncidentStatus, ServiceStatus } from "../utils/constants";
 
 export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -17,18 +17,21 @@ export const getServices = async (req: AuthenticatedRequest, res: Response) => {
             },
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         },
       },
     });
     res.json(services);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching services' });
+    res.status(500).json({ message: "Error fetching services" });
   }
 };
 
-export const getServiceById = async (req: AuthenticatedRequest, res: Response) => {
+export const getServiceById = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const service = await prisma.service.findFirst({
       where: {
@@ -38,7 +41,7 @@ export const getServiceById = async (req: AuthenticatedRequest, res: Response) =
       include: {
         incidents: {
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
           take: 10,
         },
@@ -46,35 +49,42 @@ export const getServiceById = async (req: AuthenticatedRequest, res: Response) =
     });
 
     if (!service) {
-      res.status(404).json({ message: 'Service not found' });
+      res.status(404).json({ message: "Service not found" });
       return;
     }
 
     res.json(service);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching service' });
+    res.status(500).json({ message: "Error fetching service" });
   }
 };
 
-export const createService = async (req: AuthenticatedRequest, res: Response) => {
+export const createService = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, status } = req.body;
 
     const service = await prisma.service.create({
       data: {
         name,
         description,
         organizationId: req.organizationId!,
+        status: status || ServiceStatus.OPERATIONAL,
       },
     });
 
     res.status(201).json(service);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating service' });
+    res.status(500).json({ message: "Error creating service" });
   }
 };
 
-export const updateService = async (req: AuthenticatedRequest, res: Response) => {
+export const updateService = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const { name, description, status } = req.body;
 
@@ -86,7 +96,7 @@ export const updateService = async (req: AuthenticatedRequest, res: Response) =>
     });
 
     if (!service) {
-      res.status(404).json({ message: 'Service not found' });
+      res.status(404).json({ message: "Service not found" });
       return;
     }
 
@@ -103,11 +113,14 @@ export const updateService = async (req: AuthenticatedRequest, res: Response) =>
 
     res.json(updatedService);
   } catch (error) {
-    res.status(500).json({ message: 'Error updating service' });
+    res.status(500).json({ message: "Error updating service" });
   }
 };
 
-export const deleteService = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteService = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const service = await prisma.service.findFirst({
       where: {
@@ -117,7 +130,7 @@ export const deleteService = async (req: AuthenticatedRequest, res: Response) =>
     });
 
     if (!service) {
-      res.status(404).json({ message: 'Service not found' });
+      res.status(404).json({ message: "Service not found" });
       return;
     }
 
@@ -129,6 +142,6 @@ export const deleteService = async (req: AuthenticatedRequest, res: Response) =>
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting service' });
+    res.status(500).json({ message: "Error deleting service" });
   }
 };
