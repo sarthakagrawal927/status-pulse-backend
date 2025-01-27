@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../index';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/jwt.config';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -12,19 +14,16 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.auth_token;
 
-    if (!authHeader) {
-      res.status(401).json({ message: 'No authorization header' });
+    if (!token) {
+      res.status(401).json({ message: 'Authentication required' });
       return;
     }
 
-    // TODO: Implement actual JWT verification with Auth0
-    // For now, we'll assume the token is the user's email for development
-    const email = authHeader.replace('Bearer ', '');
-
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: string };
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: decoded.id },
       include: { organization: true },
     });
 
@@ -37,7 +36,11 @@ export const authenticate = async (
     req.organizationId = user.organizationId;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Authentication failed' });
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ message: 'Invalid token' });
+      return;
+    }
+    res.status(500).json({ message: 'Error authenticating user' });
   }
 };
 

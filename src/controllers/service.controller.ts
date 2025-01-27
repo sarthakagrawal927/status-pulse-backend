@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../index';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { IncidentStatus } from '../utils/constants';
 
 export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -12,13 +13,12 @@ export const getServices = async (req: AuthenticatedRequest, res: Response) => {
         incidents: {
           where: {
             status: {
-              not: 'RESOLVED',
+              not: IncidentStatus.RESOLVED,
             },
           },
           orderBy: {
             createdAt: 'desc',
           },
-          take: 5,
         },
       },
     });
