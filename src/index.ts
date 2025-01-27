@@ -47,7 +47,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/services", serviceRoutes);
 app.use("/api/incidents", incidentRoutes);
-app.use("/api/teams", teamRoutes);
+app.use("/api/team", teamRoutes);
 app.use("/api/auth", authRoutes);
 
 // WebSocket connection

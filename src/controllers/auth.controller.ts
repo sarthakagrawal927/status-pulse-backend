@@ -4,7 +4,7 @@ import { UserRole, UserStatus } from "../utils/constants";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/jwt.config";
 
-const EXISTING_USER_ERROR_STATUS = {
+const EXISTING_USER_ERROR_STATUS: Record<UserStatus, string | boolean> = {
   [UserStatus.ACTIVE]: "User already exists",
   [UserStatus.REMOVED_BY_ADMIN]: "User is removed, Ask for a new invitation",
   [UserStatus.REMOVED_BY_SELF]: "User is removed, Ask for a new invitation",
@@ -27,7 +27,9 @@ export const register = async (req: Request, res: Response) => {
     if (existingUser) {
       if (
         Object.keys(EXISTING_USER_ERROR_STATUS)
-          .filter(Boolean)
+          .filter(
+            (val) => EXISTING_USER_ERROR_STATUS[val as UserStatus] !== false
+          )
           .includes(existingUser.status)
       ) {
         res

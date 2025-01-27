@@ -14,13 +14,13 @@ datasource db {
 }
 
 model Organization {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
   users     User[]
   services  Service[]
   incidents Incident[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model User {
@@ -28,7 +28,7 @@ model User {
   email          String         @unique
   // password       String?
   name           String?
-  role           UserRole       @default(USER)
+  role           UserRole       @default(MEMBER)
   status         UserStatus     @default(ACTIVE)
   organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
@@ -40,32 +40,32 @@ model User {
 }
 
 model Service {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   name           String
   description    String?
   status         ServiceStatus @default(OPERATIONAL)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   organizationId String
   incidents      Incident[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([organizationId])
 }
 
 model Incident {
-  id             String        @id @default(cuid())
+  id             String         @id @default(cuid())
   title          String
   description    String
   status         IncidentStatus @default(INVESTIGATING)
-  impact         Impact        @default(MINOR)
-  service        Service       @relation(fields: [serviceId], references: [id])
+  impact         Impact         @default(MINOR)
+  service        Service        @relation(fields: [serviceId], references: [id])
   serviceId      String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
   updates        StatusUpdate[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([organizationId])
   @@index([serviceId])
@@ -77,9 +77,9 @@ model StatusUpdate {
   status      IncidentStatus
   incident    Incident       @relation(fields: [incidentId], references: [id])
   incidentId  String
-  createdBy   User          @relation(fields: [createdById], references: [id])
+  createdBy   User           @relation(fields: [createdById], references: [id])
   createdById String
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime       @default(now())
 
   @@index([incidentId])
   @@index([createdById])
@@ -87,7 +87,7 @@ model StatusUpdate {
 
 enum UserRole {
   ADMIN
-  USER
+  MEMBER
 }
 
 enum UserStatus {
