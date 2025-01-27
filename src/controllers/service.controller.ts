@@ -11,13 +11,15 @@ export const getServices = async (req: AuthenticatedRequest, res: Response) => {
       },
       include: {
         incidents: {
-          where: {
-            status: {
-              not: IncidentStatus.RESOLVED,
-            },
-          },
           orderBy: {
             createdAt: "desc",
+          },
+          include: {
+            updates: {
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
           },
         },
       },

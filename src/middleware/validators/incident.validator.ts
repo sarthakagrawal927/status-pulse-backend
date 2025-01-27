@@ -43,6 +43,7 @@ export const validateCreateIncident = (
       message: "Invalid input",
       errors: result.error.errors,
     });
+    return;
   }
   next();
 };
@@ -66,6 +67,7 @@ export const validateUpdateIncident = (
       message: "Invalid input",
       errors: bodyResult.error.errors,
     });
+    return;
   }
   next();
 };
@@ -81,6 +83,7 @@ export const validateIncidentId = (
       message: "Invalid incident ID",
       errors: result.error.errors,
     });
+    return;
   }
   next();
 };
@@ -104,6 +107,7 @@ export const validateStatusUpdate = (
       message: "Invalid status update",
       errors: bodyResult.error.errors,
     });
+    return;
   }
   next();
 };

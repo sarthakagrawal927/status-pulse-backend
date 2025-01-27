@@ -1,8 +1,11 @@
-import { Response } from 'express';
-import { prisma } from '../index';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { Response } from "express";
+import { prisma } from "../index";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
-export const getIncidents = async (req: AuthenticatedRequest, res: Response) => {
+export const getIncidents = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const incidents = await prisma.incident.findMany({
       where: {
@@ -12,21 +15,24 @@ export const getIncidents = async (req: AuthenticatedRequest, res: Response) => 
         service: true,
         updates: {
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
     res.json(incidents);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching incidents' });
+    res.status(500).json({ message: "Error fetching incidents" });
   }
 };
 
-export const getIncidentById = async (req: AuthenticatedRequest, res: Response) => {
+export const getIncidentById = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const incident = await prisma.incident.findFirst({
       where: {
@@ -37,24 +43,27 @@ export const getIncidentById = async (req: AuthenticatedRequest, res: Response) 
         service: true,
         updates: {
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         },
       },
     });
 
     if (!incident) {
-      res.status(404).json({ message: 'Incident not found' });
+      res.status(404).json({ message: "Incident not found" });
       return;
     }
 
     res.json(incident);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching incident' });
+    res.status(500).json({ message: "Error fetching incident" });
   }
 };
 
-export const createIncident = async (req: AuthenticatedRequest, res: Response) => {
+export const createIncident = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const { title, description, serviceId, impact } = req.body;
 
@@ -66,7 +75,7 @@ export const createIncident = async (req: AuthenticatedRequest, res: Response) =
     });
 
     if (!service) {
-      res.status(404).json({ message: 'Service not found' });
+      res.status(404).json({ message: "Service not found" });
       return;
     }
 
@@ -87,11 +96,14 @@ export const createIncident = async (req: AuthenticatedRequest, res: Response) =
 
     res.status(201).json(incident);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating incident' });
+    res.status(500).json({ message: "Error creating incident" });
   }
 };
 
-export const updateIncident = async (req: AuthenticatedRequest, res: Response) => {
+export const updateIncident = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const { title, description, status, impact } = req.body;
 
@@ -103,7 +115,7 @@ export const updateIncident = async (req: AuthenticatedRequest, res: Response) =
     });
 
     if (!incident) {
-      res.status(404).json({ message: 'Incident not found' });
+      res.status(404).json({ message: "Incident not found" });
       return;
     }
 
@@ -127,11 +139,14 @@ export const updateIncident = async (req: AuthenticatedRequest, res: Response) =
 
     res.json(updatedIncident);
   } catch (error) {
-    res.status(500).json({ message: 'Error updating incident' });
+    res.status(500).json({ message: "Error updating incident" });
   }
 };
 
-export const deleteIncident = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteIncident = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const incident = await prisma.incident.findFirst({
       where: {
@@ -141,7 +156,7 @@ export const deleteIncident = async (req: AuthenticatedRequest, res: Response) =
     });
 
     if (!incident) {
-      res.status(404).json({ message: 'Incident not found' });
+      res.status(404).json({ message: "Incident not found" });
       return;
     }
 
@@ -153,11 +168,14 @@ export const deleteIncident = async (req: AuthenticatedRequest, res: Response) =
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting incident' });
+    res.status(500).json({ message: "Error deleting incident" });
   }
 };
 
-export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) => {
+export const addStatusUpdate = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
   try {
     const { message, status } = req.body;
 
@@ -170,7 +188,7 @@ export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) 
         service: true,
         updates: {
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
           take: 1,
         },
@@ -178,7 +196,7 @@ export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) 
     });
 
     if (!incident) {
-      res.status(404).json({ message: 'Incident not found' });
+      res.status(404).json({ message: "Incident not found" });
       return;
     }
 
@@ -213,7 +231,7 @@ export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) 
           service: true,
           updates: {
             orderBy: {
-              createdAt: 'desc',
+              createdAt: "desc",
             },
             take: 5,
             include: {
@@ -231,10 +249,10 @@ export const addStatusUpdate = async (req: AuthenticatedRequest, res: Response) 
     ]);
 
     res.status(201).json({
-      statusUpdate,
-      incident: updatedIncident,
+      ...statusUpdate,
+      // incident: updatedIncident,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error adding status update' });
+    res.status(500).json({ message: "Error adding status update" });
   }
 };
