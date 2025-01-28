@@ -27,14 +27,30 @@ A robust backend API for managing service status tracking, incident reporting, a
 
 3. Create a `.env` file in the root directory with the following variables:
    ```
+   # Database Configuration
    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/service_tracker?schema=public"
+   
+   # Server Configuration
    PORT=3000
-   FRONTEND_URL="http://localhost:3000"
+   NODE_ENV=development
+   
+   # Security
+   JWT_SECRET=your-secure-secret-key
+   
+   # CORS Configuration
+   FRONTEND_URL="http://localhost:5173"
    ```
 
 4. Set up the database:
    ```bash
+   # Generate Prisma client
+   npx prisma generate
+   
+   # Run migrations
    npx prisma migrate dev
+   
+   # (Optional) Seed the database
+   npx prisma db seed
    ```
 
 5. Start the development server:
@@ -47,6 +63,8 @@ A robust backend API for managing service status tracking, incident reporting, a
 ### Authentication
 - POST `/api/auth/register` - Register a new organization and admin user
 - POST `/api/auth/login` - Login user
+- POST `/api/auth/logout` - Logout user
+- GET `/api/auth/me` - Get current user info
 
 ### Services
 - GET `/api/services` - Get all services for the organization
@@ -77,9 +95,52 @@ The project uses the following technologies:
 - PostgreSQL for the database
 - Socket.IO for real-time updates
 - TypeScript for type safety
+- JWT for authentication
+- bcrypt for password hashing
 
 ## Scripts
 
 - `npm run dev` - Start development server with hot-reload
 - `npm run build` - Build the project
 - `npm start` - Start the production server
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+
+## Deployment
+
+The API is configured for deployment on platforms like Render or Railway. Make sure to set the following environment variables in your deployment environment:
+
+```
+DATABASE_URL=your-production-db-url
+NODE_ENV=production
+JWT_SECRET=your-secure-secret
+FRONTEND_URL=your-frontend-url
+```
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Internal Server Error
+
+## Security Features
+
+- HTTP-only cookies for JWT storage
+- CORS protection
+- Rate limiting
+- Password hashing
+- Role-based access control
+- Input validation
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
