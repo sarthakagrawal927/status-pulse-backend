@@ -27,7 +27,7 @@ model Organization {
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
-  // password       String?
+  password       String?
   name           String?
   role           UserRole       @default(MEMBER)
   status         UserStatus     @default(ACTIVE)
@@ -111,11 +111,11 @@ model UserAction {
 }
 
 model EmailOTP {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   email     String
   otp       String
   expiresAt DateTime
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([email])
 }

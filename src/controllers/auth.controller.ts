@@ -4,6 +4,9 @@ import { UserRole, UserStatus } from "../utils/constants";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/jwt.config";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import bcrypt from "bcrypt";
+
+const SALT_ROUNDS = 10;
 
 const EXISTING_USER_ERROR_STATUS: Record<UserStatus, string | boolean> = {
   [UserStatus.ACTIVE]: "User already exists",
@@ -18,13 +21,14 @@ const EXISTING_USER_ERROR_STATUS: Record<UserStatus, string | boolean> = {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, name, organizationName } = req.body;
+    const { email, name, organizationName, password } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
-
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     if (existingUser) {
       if (
         Object.keys(EXISTING_USER_ERROR_STATUS)
@@ -45,6 +49,7 @@ export const register = async (req: Request, res: Response) => {
         data: {
           name,
           status: UserStatus.ACTIVE,
+          password: hashedPassword,
         },
       });
       res.status(200).json({ ...existingUser, status: UserStatus.ACTIVE });
@@ -65,6 +70,8 @@ export const register = async (req: Request, res: Response) => {
             email,
             name,
             role: UserRole.ADMIN,
+            password: hashedPassword,
+            status: UserStatus.ACTIVE,
           },
         },
       },
@@ -85,7 +92,7 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -95,7 +102,18 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      res.status(401).json({ message: "User not found" });
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    if (!user.password) {
+      res.status(401).json({ message: "Password not set" });
+      return;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
