@@ -12,7 +12,7 @@ export const getUserActions = async (
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 40,
       actionType,
       serviceId,
       incidentId,
@@ -23,9 +23,16 @@ export const getUserActions = async (
     // Build where clause based on filters
     const where: Prisma.UserActionWhereInput = {
       organizationId: String(organizationId) || req.organizationId,
-      ...(actionType && { actionType: actionType as ActionType }),
-      ...(serviceId && { serviceId: serviceId as string }),
-      ...(incidentId && { incidentId: incidentId as string }),
+      // ...(serviceId && { serviceId: serviceId as string }),
+      // ...(incidentId && { incidentId: incidentId as string }),
+      actionType: {
+        in: [
+          ActionType.INCIDENT_CREATED,
+          ActionType.INCIDENT_UPDATED,
+          ActionType.INCIDENT_RESOLVED,
+          ActionType.SERVICE_STATUS_CHANGED,
+        ],
+      },
     };
 
     const [actions, total] = await Promise.all([
