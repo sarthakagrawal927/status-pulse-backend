@@ -20,7 +20,7 @@ export const getUserActions = async (
 
     // Build where clause based on filters
     const where: Prisma.UserActionWhereInput = {
-      organizationId: req.user.organizationId,
+      organizationId: req.query.organizationId || req.user.organizationId,
       ...(actionType && { actionType: actionType as ActionType }),
       ...(serviceId && { serviceId: serviceId as string }),
       ...(incidentId && { incidentId: incidentId as string }),

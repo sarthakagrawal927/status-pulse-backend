@@ -8,7 +8,7 @@ export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const services = await prisma.service.findMany({
       where: {
-        organizationId: req.organizationId,
+        organizationId: String(req.query.organizationId) || req.organizationId,
       },
       include: {
         incidents: {

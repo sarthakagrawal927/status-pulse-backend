@@ -4,7 +4,7 @@ import { getUserActions } from "../controllers/action.controller";
 
 const router = Router();
 
-router.use(authenticate);
+// router.use(authenticate);
 
 // Get all actions with optional filtering
 router.get("/", getUserActions);

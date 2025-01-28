@@ -13,6 +13,7 @@ import incidentRoutes from "./routes/incident.routes";
 import teamRoutes from "./routes/team.routes";
 import authRoutes from "./routes/auth.routes";
 import actionRoutes from "./routes/action.routes";
+import organizationRoutes from "./routes/organization.routes";
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use("/api/incidents", incidentRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/actions", actionRoutes);
+app.use("/api/organizations", organizationRoutes);
 
 // WebSocket connection
 io.on("connection", (socket) => {
