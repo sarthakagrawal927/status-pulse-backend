@@ -1,12 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../index';
-import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config/jwt.config';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../index";
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config/jwt.config";
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
   organizationId?: string;
 }
+
+const PUBLIC_ENDPOINTS = ["/api/services", "/api/actions"];
 
 export const authenticate = async (
   req: AuthenticatedRequest,
@@ -14,21 +16,31 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
+    // Skip authentication for public endpoints
+
     const token = req.cookies.auth_token;
 
     if (!token) {
-      res.status(401).json({ message: 'Authentication required' });
+      const urlWithoutParams = req.originalUrl.split("?")[0];
+      if (PUBLIC_ENDPOINTS.includes(urlWithoutParams)) {
+        return next();
+      }
+      res.status(401).json({ message: "Authentication required" });
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      email: string;
+      role: string;
+    };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       include: { organization: true },
     });
 
     if (!user) {
-      res.status(401).json({ message: 'User not found' });
+      res.status(401).json({ message: "User not found" });
       return;
     }
 
@@ -37,10 +49,10 @@ export const authenticate = async (
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ message: 'Invalid token' });
+      res.status(401).json({ message: "Invalid token" });
       return;
     }
-    res.status(500).json({ message: 'Error authenticating user' });
+    res.status(500).json({ message: "Error authenticating user" });
   }
 };
 
@@ -49,8 +61,8 @@ export const isAdmin = (
   res: Response,
   next: NextFunction
 ) => {
-  if (req.user?.role !== 'ADMIN') {
-     res.status(403).json({ message: 'Admin access required' });
+  if (req.user?.role !== "ADMIN") {
+    res.status(403).json({ message: "Admin access required" });
   }
   next();
 };

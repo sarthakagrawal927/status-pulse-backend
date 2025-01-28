@@ -110,6 +110,16 @@ model UserAction {
   @@index([incidentId])
 }
 
+model EmailOTP {
+  id        String    @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
 enum UserRole {
   ADMIN
   MEMBER

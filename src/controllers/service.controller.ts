@@ -6,6 +6,7 @@ import { createUserAction } from "./action.controller";
 
 export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    console.log(req.user, String(req.query.organizationId) || req.user);
     const services = await prisma.service.findMany({
       where: {
         organizationId: String(req.query.organizationId) || req.organizationId,

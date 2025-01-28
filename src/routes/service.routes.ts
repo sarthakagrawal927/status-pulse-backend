@@ -15,9 +15,9 @@ import {
 
 const router = Router();
 
-router.get("/", getServices);
 router.use(authenticate);
 
+router.get("/", getServices);
 router.get("/:id", validateServiceId, getServiceById);
 router.post("/", isAdmin, validateCreateService, createService);
 router.patch("/:id", isAdmin, validateUpdateService, updateService);
