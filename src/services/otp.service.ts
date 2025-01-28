@@ -1,5 +1,11 @@
 import { prisma } from "..";
 import { Resend } from "resend";
+import { Headers } from "node-fetch";
+
+// Polyfill Headers for Node.js < 18
+if (!global.Headers) {
+  (global as any).Headers = Headers;
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
