@@ -5,7 +5,6 @@ import { UserRole } from "../../utils/constants";
 // Validation schemas
 const inviteTeamMemberSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1).max(100),
   role: z.enum([UserRole.ADMIN, UserRole.MEMBER]),
 });
 

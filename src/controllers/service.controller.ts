@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../index";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { IncidentStatus, ServiceStatus } from "../utils/constants";
+import { createUserAction } from "./action.controller";
 
 export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -77,6 +78,16 @@ export const createService = async (
       },
     });
 
+    // Create action for service creation
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      "SERVICE_STATUS_CHANGED",
+      `Created new service: ${name}`,
+      { status: "OPERATIONAL" },
+      service.id
+    );
+
     res.status(201).json(service);
   } catch (error) {
     res.status(500).json({ message: "Error creating service" });
@@ -107,11 +118,34 @@ export const updateService = async (
         id: req.params.id,
       },
       data: {
-        name,
-        description,
-        status,
+        ...(name && { name }),
+        ...(description && { description }),
+        ...(status && { status }),
       },
     });
+
+    // Create action for service update
+    if (status && status !== service.status) {
+      let actionDescription = `Updated service status to ${status}`;
+
+      await createUserAction(
+        req.user.id,
+        req.organizationId,
+        "SERVICE_STATUS_CHANGED",
+        actionDescription,
+        { status },
+        service.id
+      );
+    } else if (name || description) {
+      await createUserAction(
+        req.user.id,
+        req.organizationId,
+        "SERVICE_STATUS_CHANGED",
+        `Updated service details for ${updatedService.name}`,
+        { name, description },
+        service.id
+      );
+    }
 
     res.json(updatedService);
   } catch (error) {

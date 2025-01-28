@@ -43,6 +43,7 @@ export const register = async (req: Request, res: Response) => {
       await prisma.user.update({
         where: { email },
         data: {
+          name,
           status: UserStatus.ACTIVE,
         },
       });

@@ -2,6 +2,7 @@ import { Response } from "express";
 import { prisma } from "../index";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { NEGATED_USER_STATUS, UserRole, UserStatus } from "../utils/constants";
+import { createUserAction } from "./action.controller";
 
 export const getTeamMembers = async (
   req: AuthenticatedRequest,
@@ -50,13 +51,22 @@ export const inviteTeamMember = async (
       }
 
       // accept invitation
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { email },
         data: {
           status: UserStatus.ACTIVE,
         },
       });
-      res.status(200).json(existingUser);
+
+      await createUserAction(
+        req.user.id,
+        req.organizationId,
+        "MEMBER_JOINED",
+        `User ${email} accepted invitation`,
+        { role: updatedUser.role }
+      );
+
+      res.status(200).json(updatedUser);
       return;
     }
 
@@ -69,6 +79,14 @@ export const inviteTeamMember = async (
         status: UserStatus.INVITATION_PENDING,
       },
     });
+
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      "MEMBER_INVITED",
+      `Invited new team member: ${email}`,
+      { role }
+    );
 
     // TODO: Send invitation email
 
@@ -138,19 +156,31 @@ export const removeTeamMember = async (
       }
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: {
         id: req.params.id,
       },
       data: {
         status:
-          req.user.id === user.id
+          req.user.id === req.params.id
             ? UserStatus.REMOVED_BY_SELF
             : UserStatus.REMOVED_BY_ADMIN,
       },
     });
 
-    res.status(204).send();
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      "MEMBER_REMOVED",
+      `${
+        updatedUser.status === UserStatus.REMOVED_BY_SELF
+          ? "User left"
+          : "Removed"
+      } team member: ${user.email}`,
+      { role: user.role }
+    );
+
+    res.json(updatedUser);
   } catch (error) {
     res.status(500).json({ message: "Error removing team member" });
   }
@@ -199,6 +229,16 @@ export const updateTeamMember = async (
         role,
       },
     });
+
+    if (req.user.role === UserRole.ADMIN) {
+      await createUserAction(
+        req.user.id,
+        req.organizationId,
+        "ROLE_UPDATED",
+        `Updated role for ${user.email} to ${role}`,
+        { oldRole: user.role, newRole: role }
+      );
+    }
 
     res.json(updatedUser);
   } catch (error) {

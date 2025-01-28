@@ -14,13 +14,14 @@ datasource db {
 }
 
 model Organization {
-  id        String     @id @default(cuid())
-  name      String
-  users     User[]
-  services  Service[]
-  incidents Incident[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String       @id @default(cuid())
+  name        String
+  users       User[]
+  services    Service[]
+  incidents   Incident[]
+  userActions UserAction[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model User {
@@ -33,6 +34,7 @@ model User {
   organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
   statusUpdates  StatusUpdate[]
+  userActions    UserAction[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -47,6 +49,7 @@ model Service {
   organization   Organization  @relation(fields: [organizationId], references: [id])
   organizationId String
   incidents      Incident[]
+  userActions    UserAction[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -64,6 +67,7 @@ model Incident {
   organization   Organization   @relation(fields: [organizationId], references: [id])
   organizationId String
   updates        StatusUpdate[]
+  userActions    UserAction[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -83,6 +87,27 @@ model StatusUpdate {
 
   @@index([incidentId])
   @@index([createdById])
+}
+
+model UserAction {
+  id             String       @id @default(cuid())
+  actionType     ActionType
+  metadata       Json? // For storing additional context
+  description    String?
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  service        Service?     @relation(fields: [serviceId], references: [id])
+  serviceId      String?
+  incident       Incident?    @relation(fields: [incidentId], references: [id])
+  incidentId     String?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([serviceId])
+  @@index([incidentId])
 }
 
 enum UserRole {
@@ -118,4 +143,16 @@ enum Impact {
   MINOR
   MAJOR
   CRITICAL
+}
+
+enum ActionType {
+  INCIDENT_CREATED
+  INCIDENT_UPDATED
+  INCIDENT_RESOLVED
+  SERVICE_STATUS_CHANGED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  MEMBER_REMOVED
+  MEMBER_LEFT
+  ROLE_UPDATED
 }

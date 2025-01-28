@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { prisma } from "../index";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { createUserAction } from "./action.controller";
 
 export const getIncidents = async (
   req: AuthenticatedRequest,
@@ -92,7 +93,16 @@ export const createIncident = async (
       },
     });
 
-    // TODO: Emit socket event for real-time updates
+    // Create action for incident creation
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      "INCIDENT_CREATED",
+      `Created incident: ${title}`,
+      { impact },
+      serviceId,
+      incident.id
+    );
 
     res.status(201).json(incident);
   } catch (error) {
@@ -124,18 +134,28 @@ export const updateIncident = async (
         id: req.params.id,
       },
       data: {
-        title,
-        description,
-        status,
-        impact,
+        ...(title && { title }),
+        ...(description && { description }),
+        ...(status && { status }),
+        ...(impact && { impact }),
       },
       include: {
         service: true,
-        updates: true,
       },
     });
 
-    // TODO: Emit socket event for real-time updates
+    // Create action for incident update
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      status === "RESOLVED" ? "INCIDENT_RESOLVED" : "INCIDENT_UPDATED",
+      `${status === "RESOLVED" ? "Resolved" : "Updated"} incident: ${
+        updatedIncident.title
+      }`,
+      { status, impact },
+      updatedIncident.serviceId,
+      updatedIncident.id
+    );
 
     res.json(updatedIncident);
   } catch (error) {
@@ -186,12 +206,6 @@ export const addStatusUpdate = async (
       },
       include: {
         service: true,
-        updates: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 1,
-        },
       },
     });
 
@@ -200,58 +214,46 @@ export const addStatusUpdate = async (
       return;
     }
 
-    // Create status update and update incident status in a transaction
-    const [statusUpdate, updatedIncident] = await prisma.$transaction([
-      prisma.statusUpdate.create({
-        data: {
-          message,
-          status,
-          incidentId: req.params.id,
-          createdById: req.user.id,
-        },
-        include: {
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
+    const statusUpdate = await prisma.statusUpdate.create({
+      data: {
+        message,
+        status,
+        incidentId: req.params.id,
+        createdById: req.user.id,
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
-      }),
-      prisma.incident.update({
-        where: {
-          id: req.params.id,
-        },
-        data: {
-          status,
-          updatedAt: new Date(),
-        },
-        include: {
-          service: true,
-          updates: {
-            orderBy: {
-              createdAt: "desc",
-            },
-            take: 5,
-            include: {
-              createdBy: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-    ]);
-
-    res.status(201).json({
-      ...statusUpdate,
-      // incident: updatedIncident,
+      },
     });
+
+    // Update incident status
+    await prisma.incident.update({
+      where: {
+        id: req.params.id,
+      },
+      data: {
+        status,
+      },
+    });
+
+    // Create action for status update
+    await createUserAction(
+      req.user.id,
+      req.organizationId,
+      "INCIDENT_UPDATED",
+      `Updated incident: ${incident.title}`,
+      { status },
+      incident.serviceId,
+      incident.id
+    );
+
+    res.status(201).json(statusUpdate);
   } catch (error) {
     res.status(500).json({ message: "Error adding status update" });
   }
