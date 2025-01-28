@@ -15,13 +15,15 @@ import authRoutes from "./routes/auth.routes";
 import actionRoutes from "./routes/action.routes";
 import organizationRoutes from "./routes/organization.routes";
 
+import { initializeSocket } from "./services/socket.service";
+
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
@@ -54,14 +56,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/actions", actionRoutes);
 app.use("/api/organizations", organizationRoutes);
 
-// WebSocket connection
-io.on("connection", (socket) => {
-  logger.info("Client connected");
-
-  socket.on("disconnect", () => {
-    logger.info("Client disconnected");
-  });
-});
+initializeSocket(io);
 
 // Error handling middleware
 app.use(

@@ -1,6 +1,7 @@
-import { ActionType, Prisma } from "@prisma/client";
-import { Response } from "express";
+import { Request, Response } from "express";
+import { Prisma, ActionType } from "@prisma/client";
 import { prisma } from "..";
+import { broadcastAction } from "../services/socket.service";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 // Get all actions with pagination and filtering
@@ -15,12 +16,13 @@ export const getUserActions = async (
       actionType,
       serviceId,
       incidentId,
+      organizationId,
     } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     // Build where clause based on filters
     const where: Prisma.UserActionWhereInput = {
-      organizationId: req.query.organizationId || req.user.organizationId,
+      organizationId: String(organizationId) || req.organizationId,
       ...(actionType && { actionType: actionType as ActionType }),
       ...(serviceId && { serviceId: serviceId as string }),
       ...(incidentId && { incidentId: incidentId as string }),
@@ -66,8 +68,8 @@ export const getUserActions = async (
       totalPages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
-    console.error("Error fetching actions:", error);
-    res.status(500).json({ error: "Failed to fetch actions" });
+    console.error("Error getting user actions:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -83,7 +85,7 @@ export const createUserAction = async (
 ) => {
   try {
     if (!organizationId) return;
-    return await prisma.userAction.create({
+    const action = await prisma.userAction.create({
       data: {
         actionType,
         description,
@@ -94,6 +96,9 @@ export const createUserAction = async (
         ...(incidentId && { incidentId }),
       },
     });
+
+    // Broadcast the action to organization members
+    broadcastAction(action);
   } catch (error) {
     console.error("Error creating user action:", error);
     throw error;
