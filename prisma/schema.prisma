@@ -42,16 +42,17 @@ model User {
 }
 
 model Service {
-  id             String        @id @default(cuid())
-  name           String
-  description    String?
-  status         ServiceStatus @default(OPERATIONAL)
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  organizationId String
-  incidents      Incident[]
-  userActions    UserAction[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                 String               @id @default(cuid())
+  name               String
+  description        String?
+  status             ServiceStatus        @default(OPERATIONAL)
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  organizationId     String
+  incidents          Incident[]
+  userActions        UserAction[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  ServiceMaintenance ServiceMaintenance[]
 
   @@index([organizationId])
 }
@@ -87,6 +88,17 @@ model StatusUpdate {
 
   @@index([incidentId])
   @@index([createdById])
+}
+
+model ServiceMaintenance {
+  id        String   @id @default(cuid())
+  service   Service  @relation(fields: [serviceId], references: [id])
+  serviceId String
+  start     DateTime
+  end       DateTime
+  notes     String?
+
+  @@index([serviceId])
 }
 
 model UserAction {
@@ -165,4 +177,7 @@ enum ActionType {
   MEMBER_REMOVED
   MEMBER_LEFT
   ROLE_UPDATED
+  MAINTENANCE_SCHEDULED
+  MAINTENANCE_STARTED
+  MAINTENANCE_COMPLETED
 }

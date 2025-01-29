@@ -31,6 +31,9 @@ export const getUserActions = async (
           ActionType.INCIDENT_UPDATED,
           ActionType.INCIDENT_RESOLVED,
           ActionType.SERVICE_STATUS_CHANGED,
+          ActionType.MAINTENANCE_SCHEDULED,
+          ActionType.MAINTENANCE_STARTED,
+          ActionType.MAINTENANCE_COMPLETED,
         ],
       },
     };

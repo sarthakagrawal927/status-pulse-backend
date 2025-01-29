@@ -14,6 +14,7 @@ import teamRoutes from "./routes/team.routes";
 import authRoutes from "./routes/auth.routes";
 import actionRoutes from "./routes/action.routes";
 import organizationRoutes from "./routes/organization.routes";
+import serviceMaintenanceRoutes from "./routes/serviceMaintenance.routes";
 
 import { initializeSocket } from "./services/socket.service";
 
@@ -55,6 +56,7 @@ app.use("/api/team", teamRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/actions", actionRoutes);
 app.use("/api/organizations", organizationRoutes);
+app.use("/api/maintenance", serviceMaintenanceRoutes);
 
 initializeSocket(io);
 

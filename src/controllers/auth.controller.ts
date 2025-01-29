@@ -102,7 +102,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "User not found" });
       return;
     }
 
@@ -131,7 +131,7 @@ export const login = async (req: Request, res: Response) => {
     res.cookie("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: "strict",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
