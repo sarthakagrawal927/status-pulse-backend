@@ -2,6 +2,7 @@ import { Response } from "express";
 import { ActionType } from "@prisma/client";
 import { prisma } from "../index";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { createUserAction } from "./action.controller";
 
 interface CreateUserActionParams {
   actionType: ActionType;
@@ -11,27 +12,6 @@ interface CreateUserActionParams {
   description: string;
   metadata: Record<string, any>;
 }
-
-const createUserAction = async (params: CreateUserActionParams) => {
-  const {
-    actionType,
-    userId,
-    organizationId,
-    serviceId,
-    description,
-    metadata,
-  } = params;
-  return prisma.userAction.create({
-    data: {
-      actionType,
-      userId,
-      organizationId,
-      serviceId,
-      description,
-      metadata,
-    },
-  });
-};
 
 export const getServiceMaintenances = async (
   req: AuthenticatedRequest,
@@ -126,18 +106,18 @@ export const createServiceMaintenance = async (
     });
 
     // Create user action
-    await createUserAction({
-      actionType: ActionType.MAINTENANCE_SCHEDULED,
+    await createUserAction(
       userId,
       organizationId,
-      serviceId,
-      description: `Scheduled maintenance for ${service.name}`,
-      metadata: {
+      ActionType.MAINTENANCE_SCHEDULED,
+      `Scheduled maintenance for ${service.name}`,
+      {
         maintenanceId: maintenance.id,
         start,
         end,
       },
-    });
+      serviceId
+    );
 
     res.status(201).json(maintenance);
   } catch (error) {
@@ -185,18 +165,18 @@ export const updateServiceMaintenance = async (
     });
 
     // Create user action
-    await createUserAction({
-      actionType: ActionType.MAINTENANCE_SCHEDULED,
+    await createUserAction(
       userId,
       organizationId,
-      serviceId: maintenance.serviceId,
-      description: `Updated maintenance for ${maintenance.service.name}`,
-      metadata: {
+      ActionType.MAINTENANCE_STARTED,
+      `Updated maintenance for ${maintenance.service.name}`,
+      {
         maintenanceId: maintenance.id,
         start,
         end,
       },
-    });
+      maintenance.serviceId
+    );
 
     res.json(maintenance);
   } catch (error) {
@@ -235,16 +215,16 @@ export const deleteServiceMaintenance = async (
     });
 
     // Create user action
-    await createUserAction({
-      actionType: ActionType.MAINTENANCE_COMPLETED,
+    await createUserAction(
       userId,
       organizationId,
-      serviceId: maintenance.serviceId,
-      description: `Deleted maintenance for ${maintenance.service.name}`,
-      metadata: {
+      ActionType.MAINTENANCE_COMPLETED,
+      `Deleted maintenance for ${maintenance.service.name}`,
+      {
         maintenanceId: maintenance.id,
       },
-    });
+      maintenance.serviceId
+    );
 
     res.status(204).send();
   } catch (error) {
